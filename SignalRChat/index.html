@@ -43,7 +43,6 @@
             });
 
             function success(position) {
-                alert("success!");
                 userLocationLatitude = position.coords.latitude;
                 userLocationLongitude = position.coords.longitude;
                 createMarker(userName, userLocationLatitude, userLocationLongitude, 'http://maps.google.com/mapfiles/ms/icons/red-dot.png');
