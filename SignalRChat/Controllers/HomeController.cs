@@ -1,4 +1,6 @@
 ﻿using System.Web.Mvc;
+using SignalRChat.Infrastructure;
+using SignalRChat.Models;
 
 namespace SignalRChat.Controllers
 {
@@ -7,7 +9,12 @@ namespace SignalRChat.Controllers
     {
         public ViewResult Index()
         {
-            return View();
+            var model = new User
+            {
+                Name = User.Identity.Name,
+                Identifier = HttpContext.GetCurrentLogonUserIdentifier()
+            };
+            return View(model);
         }
     }
 }

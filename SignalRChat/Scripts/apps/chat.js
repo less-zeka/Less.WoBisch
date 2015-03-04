@@ -77,7 +77,8 @@
         $('#sendmessage').click(function () {
             // Call the Send method on the hub.
             //TODO send to desired user!
-            chat.server.send($('#message').val(), "user2");
+            //chat.server.send($('#message').val(), null);
+            chat.server.send($('#message').val());
             // Clear text box and reset focus for next comment.
             $('#message').val('').focus();
         });

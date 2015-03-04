@@ -8,6 +8,7 @@
 
 @using (Html.BeginForm())
 {
+    @Html.HiddenFor(m => Model.Identifier)
     @Html.EditorForModel()
     <input type="submit" class="btn" value="Login" />
 }

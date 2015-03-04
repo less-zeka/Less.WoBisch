@@ -3,66 +3,93 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web.Security;
 using Microsoft.AspNet.SignalR;
+using Newtonsoft.Json;
+using SignalRChat.Models;
 
-
-namespace SignalRChat
+namespace SignalRChat.Hubs
 {
-    public class User
-    {
-        public string Name { get; set; }
-        public HashSet<string> ConnectionIds { get; set; }
-    }
-
     [Authorize]
     public class ChatHub : Hub
     {
         private static readonly ConcurrentDictionary<string, User> Users
             = new ConcurrentDictionary<string, User>(StringComparer.InvariantCultureIgnoreCase);
 
-        //public void Send(string name, string message)
-        //{
-        //    // Call the broadcastMessage method to update clients.
-        //    Clients.All.broadcastMessage(name, message);
-        //}
-
+        //TOOD only for allowed users!
         public void UpdatePosition(string name, double latitude, double longitude)
         {
             //var geocoordinate = new GeoCoordinate(10, 10);
             Clients.All.updatePosition(name, latitude, longitude);
         }
 
-        //TODO refactor from here
-        public void Send(string message)
+        private string CurrentLogonUserIdentifier
         {
-            string sender = Context.User.Identity.Name;
-
-            // So, broadcast the sender, too.
-            Clients.All.received(new {sender = sender, message = message, isPrivate = false});
-        }
-
-        public void Send(string message, string to)
-        {
-            User receiver;
-            if (Users.TryGetValue(to, out receiver))
+            get
             {
-                User sender = GetUser(Context.User.Identity.Name);
-
-                IEnumerable<string> allReceivers;
-                lock (receiver.ConnectionIds)
+                if (Context.Request.Cookies != null)
                 {
-                    lock (sender.ConnectionIds)
+                    var cookie = Context.Request.Cookies[FormsAuthentication.FormsCookieName];
+
+                    if (null == cookie)
+                        return string.Empty;
+
+                    var decrypted = FormsAuthentication.Decrypt(cookie.Value);
+
+                    if (decrypted != null && !string.IsNullOrEmpty(decrypted.UserData))
                     {
-                        allReceivers = receiver.ConnectionIds.Concat(sender.ConnectionIds);
+                        var identifier = JsonConvert.DeserializeObject(decrypted.UserData);
+                        return identifier.ToString();
                     }
                 }
+                return string.Empty;
+            }
+        }
 
-                foreach (var cid in allReceivers)
+        public void Send(string message)
+        {
+            var sender = GetUser(Context.User.Identity.Name);
+
+            foreach (var user in Users)
+            {
+                var potentialReceiver = user.Value;
+                if (potentialReceiver.Identifier == CurrentLogonUserIdentifier)
                 {
-                    Clients.Client(cid).received(new {sender = sender.Name, message = message, isPrivate = true});
+                    Clients.User(user.Key).broadcastMessage(sender.Name, message);
                 }
             }
         }
+
+        //public void Send(string message, string to)
+        //{
+        //    if (string.IsNullOrEmpty(to))
+        //    {
+        //        var username = Context.User.Identity.Name;
+        //        to = username == "user1" ? "user2" : "user1";
+        //    }
+
+        //    User receiver;
+        //    if (Users.TryGetValue(to, out receiver))
+        //    {
+        //        User sender = GetUser(Context.User.Identity.Name);
+
+        //        IEnumerable<string> allReceivers;
+        //        lock (receiver.ConnectionIds)
+        //        {
+        //            lock (sender.ConnectionIds)
+        //            {
+        //                allReceivers = receiver.ConnectionIds.Concat(sender.ConnectionIds);
+        //            }
+        //        }
+
+        //        foreach (var cid in allReceivers)
+        //        {
+        //            Clients.Client(cid).received(new {sender = sender.Name, message, isPrivate = true});
+        //            Clients.User(to).broadcastMessage("test", message);
+
+        //        }
+        //    }
+        //}
 
         public IEnumerable<string> GetConnectedUsers()
         {
@@ -78,13 +105,15 @@ namespace SignalRChat
 
         public override Task OnConnected()
         {
-            string userName = Context.User.Identity.Name;
-            string connectionId = Context.ConnectionId;
+            var userName = Context.User.Identity.Name;
+            var connectionId = Context.ConnectionId;
+            var identifier = CurrentLogonUserIdentifier;
 
             var user = Users.GetOrAdd(userName, _ => new User
             {
                 Name = userName,
-                ConnectionIds = new HashSet<string>()
+                ConnectionIds = new HashSet<string>(),
+                Identifier = identifier
             });
 
             lock (user.ConnectionIds)
@@ -98,6 +127,7 @@ namespace SignalRChat
                 // is the first connection of the user
                 if (user.ConnectionIds.Count == 1)
                 {
+                    //TODO!
                     Clients.Others.userConnected(userName);
                 }
             }
@@ -107,8 +137,8 @@ namespace SignalRChat
 
         public override Task OnDisconnected(bool stopCalled)
         {
-            string userName = Context.User.Identity.Name;
-            string connectionId = Context.ConnectionId;
+            var userName = Context.User.Identity.Name;
+            var connectionId = Context.ConnectionId;
 
             User user;
             Users.TryGetValue(userName, out user);
@@ -135,7 +165,7 @@ namespace SignalRChat
             return base.OnDisconnected(stopCalled);
         }
 
-        private User GetUser(string username)
+        public static User GetUser(string username)
         {
             User user;
             Users.TryGetValue(username, out user);

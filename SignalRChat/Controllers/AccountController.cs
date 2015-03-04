@@ -1,5 +1,8 @@
-﻿using System.Web.Mvc;
+﻿using System;
+using System.Globalization;
+using System.Web.Mvc;
 using System.Web.Security;
+using SignalRChat.Infrastructure;
 using SignalRChat.Models;
 
 namespace SignalRChat.Controllers
@@ -8,7 +11,17 @@ namespace SignalRChat.Controllers
     {
         public ViewResult Login()
         {
-            return View();
+            var identifier = Request.QueryString["Identifier"];
+            if (string.IsNullOrEmpty(identifier))
+            {
+                identifier = DateTime.Now.Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            var loginModel = new LoginModel
+            {
+                Identifier = identifier
+            };
+            return View(loginModel);
         }
 
         [HttpPost]
@@ -17,8 +30,11 @@ namespace SignalRChat.Controllers
         {
             if (ModelState.IsValid)
             {
-                FormsAuthentication.SetAuthCookie(loginModel.Name, true);
-                return RedirectToAction("index", "home");
+                //Response.SetAuthCookie(loginModel.Name, true, string.Format("{0}_{1}", loginModel.Name, loginModel.Identifier));
+                Response.SetAuthCookie(loginModel.Name, true, string.Format("{0}", loginModel.Identifier));
+
+                //FormsAuthentication.SetAuthCookie(loginModel.Name, true);
+                return RedirectToAction("Index", "Home");
             }
 
             return View(loginModel);
@@ -29,7 +45,7 @@ namespace SignalRChat.Controllers
         public ActionResult PostSignOut()
         {
             FormsAuthentication.SignOut();
-            return RedirectToAction("index", "home");
+            return RedirectToAction("Index", "Home");
         }
     }
 }
