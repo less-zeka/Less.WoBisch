@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNet.SignalR.Hubs;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Web;
 using System.Web.Security;
 
@@ -32,29 +31,5 @@ namespace SignalRChat.Infrastructure
             }
             return 0;
         }
-    }
-
-    public static class HttpContextExtensions
-    {
-        public static string GetCurrentLogonUserIdentifier(this HttpContextBase context)
-        {
-
-            if (context.Request.Cookies != null)
-            {
-                var cookie = context.Request.Cookies[FormsAuthentication.FormsCookieName];
-
-                if (null == cookie)
-                    return string.Empty;
-
-                var decrypted = FormsAuthentication.Decrypt(cookie.Value);
-
-                if (decrypted != null && !string.IsNullOrEmpty(decrypted.UserData))
-                {
-                    var identifier = JsonConvert.DeserializeObject(decrypted.UserData);
-                    return identifier.ToString();
-                }
-            }
-            return string.Empty;
-        }
-    }
+    }   
 }

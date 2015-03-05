@@ -1,4 +1,5 @@
 ﻿using System.Web.Mvc;
+using SignalRChat.Hubs;
 using SignalRChat.Infrastructure;
 using SignalRChat.Models;
 
@@ -15,6 +16,12 @@ namespace SignalRChat.Controllers
                 Identifier = HttpContext.GetCurrentLogonUserIdentifier()
             };
             return View(model);
+        }
+
+        public PartialViewResult UserLegend()
+        {
+            var model = ChatHub.GetUsersByIdentifier(HttpContext.GetCurrentLogonUserIdentifier());
+            return PartialView("_UserLegend", model);
         }
     }
 }

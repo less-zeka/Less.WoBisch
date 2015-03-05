@@ -16,11 +16,15 @@ namespace SignalRChat.Hubs
         private static readonly ConcurrentDictionary<string, User> Users
             = new ConcurrentDictionary<string, User>(StringComparer.InvariantCultureIgnoreCase);
 
-        //TOOD only for allowed users!
         public void UpdatePosition(string name, double latitude, double longitude)
         {
-            //var geocoordinate = new GeoCoordinate(10, 10);
-            Clients.All.updatePosition(name, latitude, longitude);
+            //Clients.All.updatePosition(name, latitude, longitude);
+            var user = GetUser(Context.User.Identity.Name);
+
+            foreach (var u in GetUsersByIdentifier(user.Identifier))
+            {
+                Clients.User(u.Name).updatePosition(name, latitude, longitude);
+            }
         }
 
         private string CurrentLogonUserIdentifier
@@ -49,47 +53,17 @@ namespace SignalRChat.Hubs
         public void Send(string message)
         {
             var sender = GetUser(Context.User.Identity.Name);
-
-            foreach (var user in Users)
+            var users = GetUsersByIdentifier(sender.Identifier);
+            foreach (var user in users)
             {
-                var potentialReceiver = user.Value;
-                if (potentialReceiver.Identifier == CurrentLogonUserIdentifier)
-                {
-                    Clients.User(user.Key).broadcastMessage(sender.Name, message);
-                }
+                Clients.User(user.Name).broadcastMessage(sender.Name, message);
             }
         }
 
-        //public void Send(string message, string to)
-        //{
-        //    if (string.IsNullOrEmpty(to))
-        //    {
-        //        var username = Context.User.Identity.Name;
-        //        to = username == "user1" ? "user2" : "user1";
-        //    }
-
-        //    User receiver;
-        //    if (Users.TryGetValue(to, out receiver))
-        //    {
-        //        User sender = GetUser(Context.User.Identity.Name);
-
-        //        IEnumerable<string> allReceivers;
-        //        lock (receiver.ConnectionIds)
-        //        {
-        //            lock (sender.ConnectionIds)
-        //            {
-        //                allReceivers = receiver.ConnectionIds.Concat(sender.ConnectionIds);
-        //            }
-        //        }
-
-        //        foreach (var cid in allReceivers)
-        //        {
-        //            Clients.Client(cid).received(new {sender = sender.Name, message, isPrivate = true});
-        //            Clients.User(to).broadcastMessage("test", message);
-
-        //        }
-        //    }
-        //}
+        public static IEnumerable<User> GetUsersByIdentifier(string identifier)
+        {
+            return Users.Values.Where(user => user.Identifier == identifier).ToList();
+        }
 
         public IEnumerable<string> GetConnectedUsers()
         {
@@ -113,22 +87,16 @@ namespace SignalRChat.Hubs
             {
                 Name = userName,
                 ConnectionIds = new HashSet<string>(),
-                Identifier = identifier
+                Identifier = identifier,
             });
 
             lock (user.ConnectionIds)
             {
                 user.ConnectionIds.Add(connectionId);
 
-                // // broadcast this to all clients other than the caller
-                // Clients.AllExcept(user.ConnectionIds.ToArray()).userConnected(userName);
-
-                // Or you might want to only broadcast this info if this 
-                // is the first connection of the user
-                if (user.ConnectionIds.Count == 1)
+                foreach (var u in GetUsersByIdentifier(user.Identifier))
                 {
-                    //TODO!
-                    Clients.Others.userConnected(userName);
+                    Clients.User(u.Name).updateConnectedUsers();
                 }
             }
 
@@ -154,10 +122,10 @@ namespace SignalRChat.Hubs
                         User removedUser;
                         Users.TryRemove(userName, out removedUser);
 
-                        // You might want to only broadcast this info if this 
-                        // is the last connection of the user and the user actual is 
-                        // now disconnected from all connections.
-                        Clients.Others.userDisconnected(userName);
+                        foreach (var u in GetUsersByIdentifier(user.Identifier))
+                        {
+                            Clients.User(u.Name).updateConnectedUsers();
+                        }
                     }
                 }
             }

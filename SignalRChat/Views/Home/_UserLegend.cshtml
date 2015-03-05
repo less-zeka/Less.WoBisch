@@ -1,0 +1,8 @@
+﻿@using SignalRChat.Models
+@model IEnumerable<User>
+<ul>
+    @foreach (var user in Model)
+    {
+        <li>@user.Name</li>
+    }
+</ul>

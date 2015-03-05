@@ -19,35 +19,22 @@
                         <div>
                             @using (Html.BeginForm("signout", "account"))
                             {
-                                <input class="btn-danger" type="submit" value="Quit that shit" />
+                                <input class="btn btn-danger" type="submit" value="Quit that shit" />
                             }
-                            <button id="btnInvite" value="@Request.Url?identifier=test">Invitation link</button>
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <div class="container body-content">
+        <div id="content" class="container">
             @RenderBody()
             <hr />
             <footer>
-                <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+                <p>&copy; @DateTime.Now.Year - Less More</p>
             </footer>
         </div>
 
-
-        
-        @*<script>
-            $().ready(function () {
-                $("#btnInvite").click(function () {
-                    copyToClipboard(this.value);
-                });
-            });
-            function copyToClipboard(text) {
-                window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
-            }
-        </script>*@
         @RenderSection("scripts", required: false)
 
     </body>
