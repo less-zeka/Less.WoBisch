@@ -1,9 +1,10 @@
-﻿$(function () {
+$(function () {
     var userLocationLatitude;
     var userLocationLongitude;
     var userName;
     var options;
     var userMarkers = [];
+    var userIcons = [];
 
     id = navigator.geolocation.watchPosition(success, error, options);
 
@@ -17,9 +18,8 @@
         console.log("log: success");
         userLocationLatitude = position.coords.latitude;
         userLocationLongitude = position.coords.longitude;
-        //createMarker(userName, userLocationLatitude, userLocationLongitude, 'http://maps.google.com/mapfiles/ms/icons/red-dot.png');
 
-        chat.server.updatePosition(userName, userLocationLatitude, userLocationLongitude);
+        chat.server.updatePosition(userLocationLatitude, userLocationLongitude);
     }
 
     function error(err) {
@@ -40,14 +40,20 @@
         // This makes the div with id "map_canvas" a google map
         map = new window.google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
-        createMarker(userName, userLocationLatitude, userLocationLongitude, 'http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+        if (userIcons[name] == undefined) {
+            userIcons[name] = getIcon(Object.keys(userIcons).length);
+        }
+        createMarker(userName, userLocationLatitude, userLocationLongitude, userIcons[name]);
     };
 
     function createMarker(name, lat, lon, icon) {
-        if (userMarkers[name != undefined]) {
-            userMarkers[name].setMap(null);
-        }
         console.log("log: createMarker(...)");
+        if (userMarkers[name] != undefined) {
+            userMarkers[name].setMap(null);
+            console.log("log: createMarker(...) --> found a userMarker! was i able to delete it?");
+        }
+        console.log("log: createMarker(...) --> DID NOT found a userMarker! was i able to delete it?");
+
         var marker = {};
         marker = new window.google.maps.Marker({
             position: new window.google.maps.LatLng(lat, lon),
@@ -56,7 +62,7 @@
             icon: icon
         });
         userMarkers[name] = marker;
-        //marker.setIcon(icon);
+
         return marker;
     }
 
@@ -77,9 +83,38 @@
     };
 
     chat.client.updatePosition = function (name, latitude, longitude) {
-        console.log("log: updatePosition, name: "+name);
-        createMarker(name, latitude, longitude, 'http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+        console.log("log: updatePosition, name: " + name);
+
+        if (userIcons[name] == undefined) {
+            console.log("log: updatePosition, userIcons[name] was undefined ");
+            userIcons[name] = getIcon(Object.keys(userIcons).length);
+        }
+        else{
+            console.log("log: updatePosition, userIcons[name] WASNOT!!! undefined ");
+        }
+        console.log("log: updatePosition, now we have " + Object.keys(userIcons).length + "items");
+        createMarker(name, latitude, longitude, userIcons[name]);
     };
+
+    function getIcon(counter) {
+        console.log("getIcon(), counter: " + counter);
+        if (counter == 0) {
+            return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+        }
+        else if (counter == 1) {
+            return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+        }
+        else if (counter == 2) {
+            return 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+        }
+        else if (counter == 3) {
+            return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+        } 
+        else {
+            return 'http://maps.google.com/mapfiles/ms/icons/pink-dot.png';
+        }
+
+    }
     //
 
     // Set initial focus to message input box.

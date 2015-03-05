@@ -16,14 +16,13 @@ namespace SignalRChat.Hubs
         private static readonly ConcurrentDictionary<string, User> Users
             = new ConcurrentDictionary<string, User>(StringComparer.InvariantCultureIgnoreCase);
 
-        public void UpdatePosition(string name, double latitude, double longitude)
+        public void UpdatePosition(double latitude, double longitude)
         {
-            //Clients.All.updatePosition(name, latitude, longitude);
             var user = GetUser(Context.User.Identity.Name);
 
             foreach (var u in GetUsersByIdentifier(user.Identifier))
             {
-                Clients.User(u.Name).updatePosition(name, latitude, longitude);
+                Clients.User(u.Name).updatePosition(Context.User.Identity.Name, latitude, longitude);
             }
         }
 
