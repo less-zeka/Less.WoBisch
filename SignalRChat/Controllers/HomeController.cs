@@ -20,7 +20,7 @@ namespace SignalRChat.Controllers
 
         public PartialViewResult UserLegend()
         {
-            var model = ChatHub.GetUsersByIdentifier(HttpContext.GetCurrentLogonUserIdentifier());
+            var model = ChatAndFindHub.GetUsersByIdentifier(HttpContext.GetCurrentLogonUserIdentifier());
             return PartialView("_UserLegend", model);
         }
     }

@@ -5,13 +5,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Security;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Newtonsoft.Json;
 using SignalRChat.Models;
 
 namespace SignalRChat.Hubs
 {
     [Authorize]
-    public class ChatHub : Hub
+    [HubName("chatAndFindHub")]
+    public class ChatAndFindHub : Hub
     {
         private static readonly ConcurrentDictionary<string, User> Users
             = new ConcurrentDictionary<string, User>(StringComparer.InvariantCultureIgnoreCase);
@@ -76,6 +78,55 @@ namespace SignalRChat.Hubs
             }).Select(x => x.Key);
         }
 
+        //TODO that's bullshit!
+        private string GetPinColor()
+        {
+            if (!string.IsNullOrEmpty(Context.User.Identity.Name))
+            {
+                var user = GetUser(Context.User.Identity.Name);
+                if (user != null)
+                {
+                    var users = GetUsersByIdentifier(user.Identifier);
+
+                    if (users != null)
+                    {
+                        var nrUsers = users.Count();
+
+                        if (nrUsers == 0)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+                        }
+                        if (nrUsers == 1)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+                        }
+                        if (nrUsers == 2)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+                        }
+                        if (nrUsers == 3)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+                        }
+                        if (nrUsers == 4)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+                        }
+                        if (nrUsers == 5)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/micons/ltblue-dot.png";
+                        }
+                        if (nrUsers == 6)
+                        {
+                            return "http://maps.google.com/mapfiles/ms/micons/orange-dot.png";
+                        }
+                    }
+                    return "http://maps.google.com/mapfiles/ms/icons/pink-dot.png";
+                }
+            }
+            return string.Empty;
+        }
+
         public override Task OnConnected()
         {
             var userName = Context.User.Identity.Name;
@@ -88,6 +139,7 @@ namespace SignalRChat.Hubs
                 ConnectionIds = new HashSet<string>(),
                 Identifier = identifier,
             });
+            user.PinColor = GetPinColor();
 
             lock (user.ConnectionIds)
             {
