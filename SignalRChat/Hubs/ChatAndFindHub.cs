@@ -18,13 +18,31 @@ namespace SignalRChat.Hubs
         private static readonly ConcurrentDictionary<string, User> Users
             = new ConcurrentDictionary<string, User>(StringComparer.InvariantCultureIgnoreCase);
 
+
+        private readonly IEnumerable<string> Colors = new List<string>();
+
+        public ChatAndFindHub()
+        {
+           Colors = new List<string>
+            {
+                "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+                "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
+                "http://maps.google.com/mapfiles/ms/icons/purple-dot.png",
+                "http://maps.google.com/mapfiles/ms/micons/ltblue-dot.png",
+                "http://maps.google.com/mapfiles/ms/micons/orange-dot.png",
+                "http://maps.google.com/mapfiles/ms/icons/pink-dot.png"
+            };
+        }
+
         public void UpdatePosition(double latitude, double longitude)
         {
             var user = GetUser(Context.User.Identity.Name);
 
             foreach (var u in GetUsersByIdentifier(user.Identifier))
             {
-                Clients.User(u.Name).updatePosition(Context.User.Identity.Name, latitude, longitude);
+                Clients.User(u.Name).updatePosition(Context.User.Identity.Name, latitude, longitude, user.PinColor);
             }
         }
 
@@ -78,52 +96,18 @@ namespace SignalRChat.Hubs
             }).Select(x => x.Key);
         }
 
-        //TODO that's bullshit!
         private string GetPinColor()
         {
-            if (!string.IsNullOrEmpty(Context.User.Identity.Name))
+            var user = GetUser(Context.User.Identity.Name);
+            if (user != null)
             {
-                var user = GetUser(Context.User.Identity.Name);
-                if (user != null)
+                var users = GetUsersByIdentifier(user.Identifier);
+                if (users != null)
                 {
-                    var users = GetUsersByIdentifier(user.Identifier);
-
-                    if (users != null)
-                    {
-                        var nrUsers = users.Count();
-
-                        if (nrUsers == 0)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-                        }
-                        if (nrUsers == 1)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
-                        }
-                        if (nrUsers == 2)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
-                        }
-                        if (nrUsers == 3)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
-                        }
-                        if (nrUsers == 4)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
-                        }
-                        if (nrUsers == 5)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/micons/ltblue-dot.png";
-                        }
-                        if (nrUsers == 6)
-                        {
-                            return "http://maps.google.com/mapfiles/ms/micons/orange-dot.png";
-                        }
-                    }
-                    return "http://maps.google.com/mapfiles/ms/icons/pink-dot.png";
+                    return Colors.FirstOrDefault(c => users.All(u => u.PinColor != c));
                 }
             }
+
             return string.Empty;
         }
 
@@ -138,7 +122,9 @@ namespace SignalRChat.Hubs
                 Name = userName,
                 ConnectionIds = new HashSet<string>(),
                 Identifier = identifier,
+                
             });
+
             user.PinColor = GetPinColor();
 
             lock (user.ConnectionIds)
@@ -159,15 +145,13 @@ namespace SignalRChat.Hubs
             var userName = Context.User.Identity.Name;
             var connectionId = Context.ConnectionId;
 
-            User user;
-            Users.TryGetValue(userName, out user);
+            var user = GetUser(userName);
 
             if (user != null)
             {
                 lock (user.ConnectionIds)
                 {
                     user.ConnectionIds.RemoveWhere(cid => cid.Equals(connectionId));
-
                     if (!user.ConnectionIds.Any())
                     {
                         User removedUser;
@@ -184,11 +168,10 @@ namespace SignalRChat.Hubs
             return base.OnDisconnected(stopCalled);
         }
 
-        public static User GetUser(string username)
+        public User GetUser(string username)
         {
             User user;
             Users.TryGetValue(username, out user);
-
             return user;
         }
     }

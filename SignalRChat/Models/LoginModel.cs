@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Web.Mvc;
 
 namespace SignalRChat.Models
 {
@@ -9,7 +8,6 @@ namespace SignalRChat.Models
         public string Name { get; set; }
 
         [Required]
-        [HiddenInput(DisplayValue = false)]
         public string Identifier { get; set; }
     }
 }

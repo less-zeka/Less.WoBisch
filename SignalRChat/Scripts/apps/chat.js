@@ -68,36 +68,9 @@
         $("#userLegend").load('/Home/UserLegend');
     };
 
-    chatAndFindHub.client.updatePosition = function(name, latitude, longitude) {
-
-        if (userIcons[name] == undefined) {
-            userIcons[name] = getIcon(Object.keys(userIcons).length);
-        }
-
-        createMarker(name, latitude, longitude, userIcons[name]);
+    chatAndFindHub.client.updatePosition = function(name, latitude, longitude, pin) {
+        createMarker(name, latitude, longitude, pin);
     };
-
-    // TODO don't like this solution
-    function getIcon(counter) {
-        if (counter == 0) {
-            return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
-        } else if (counter == 1) {
-            return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-        } else if (counter == 2) {
-            return 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
-        } else if (counter == 3) {
-            return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
-        } else if (counter == 4) {
-            return 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png';
-        } else if (counter == 5) {
-            return 'http://maps.google.com/mapfiles/ms/micons/ltblue-dot.png';
-        } else if (counter == 6) {
-            return 'http://maps.google.com/mapfiles/ms/micons/orange-dot.png';
-        } else {
-            return 'http://maps.google.com/mapfiles/ms/icons/pink-dot.png';
-        }
-
-    }
 
     // Set initial focus to message input box.
     $('#message').focus();
